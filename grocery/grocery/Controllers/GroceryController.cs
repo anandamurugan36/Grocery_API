@@ -85,9 +85,9 @@ namespace grocery.Controllers
             try
             {
                 SqlConnection sqlconn = new SqlConnection(connecstr);
-                //string sqlquery = "INSERT INTO GroceryData (GroceryName, Price, Type, img) SELECT '" + groceryItem.GroceryName+"',"+groceryItem.Price+", '"+groceryItem.Type+"', BulkColumn FROM Openrowset(Bulk '"+groceryItem.Img+"', Single_Blob) as Logo";
+                string sqlquery = "INSERT INTO GroceryData (GroceryName, Price, Type, img) SELECT '" + groceryItem.GroceryName+"',"+groceryItem.Price+", '"+groceryItem.Type+"', BulkColumn FROM Openrowset(Bulk '"+groceryItem.Image+"', Single_Blob) as Logo";
                 sqlconn.Open();
-                SqlCommand sqlcomm = new SqlCommand("", sqlconn);
+                SqlCommand sqlcomm = new SqlCommand(sqlquery, sqlconn);
                 sqlcomm.ExecuteReader();
                 response.Message = "Item added";
                 return response;
