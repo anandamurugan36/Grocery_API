@@ -8,8 +8,10 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace grocery.Controllers
 {
@@ -83,7 +85,7 @@ namespace grocery.Controllers
             try
             {
                 SqlConnection sqlconn = new SqlConnection(connecstr);
-                string sqlquery = "INSERT INTO GroceryData (GroceryName, Price, Type, img) SELECT '" + groceryItem.GroceryName+"',"+groceryItem.Price+", '"+groceryItem.Type+"', BulkColumn FROM Openrowset(Bulk '"+groceryItem.Img+"', Single_Blob) as Logo";
+                string sqlquery = "INSERT INTO GroceryData (GroceryName, Price, Type, img) SELECT '" + groceryItem.GroceryName+"',"+groceryItem.Price+", '"+groceryItem.Type+"', BulkColumn FROM Openrowset(Bulk '"+groceryItem.Image+"', Single_Blob) as Logo";
                 sqlconn.Open();
                 SqlCommand sqlcomm = new SqlCommand(sqlquery, sqlconn);
                 sqlcomm.ExecuteReader();
@@ -131,34 +133,29 @@ namespace grocery.Controllers
 
         [HttpGet]
         [Route("api/getCategory")]
-        public ApiResponse GetGrocery(string type)
+        public Response GetGrocery()
         {
-            ApiResponse response = new ApiResponse();
+            Response response = new Response();
             try
             {
-                //switch (type.ToLowerInvariant())
-                //{
-                //    case "vegetables":
-                //        break;
-                //    case "fruits":
-                //        break;
-                //    case "snacks":
-                //        break;
-                //    case "dairy":
-                //        break;
-                //    case "meat":
-                //        break;
-                //    case "grocery":
-                //        break;
-                //}
                 SqlConnection sqlconn = new SqlConnection(connecstr);
-                string selectQuery = "select * from GroceryData where Type = '" + type+"';";
+                string selectQuery = "select * from GroceryData;";
                 sqlconn.Open();
-                SqlDataAdapter dataAdapter = new SqlDataAdapter(selectQuery, sqlconn);
-                DataTable dt = new DataTable();
-                dataAdapter.Fill(dt);
-                response.Data = JsonConvert.SerializeObject(dt);
-                //response.Data = dt;
+                SqlCommand sqlCommand = new(selectQuery, sqlconn);
+                SqlDataReader rdr = sqlCommand.ExecuteReader();
+                List<GroceryItem> groceryItemList = new List<GroceryItem>();
+                while (rdr.Read())
+                {
+                    GroceryItem groceryItem = new GroceryItem();
+                    groceryItem.Id = Convert.ToInt32(rdr.GetValue(0));
+                    groceryItem.GroceryName = rdr[1].ToString();
+                    groceryItem.Price = Convert.ToDecimal(rdr.GetValue(2));
+                    groceryItem.Type = rdr[3].ToString();
+                    byte[] img = (byte[])rdr.GetValue(4);
+                    groceryItem.Image = "data:image/png;base64, " + Convert.ToBase64String(img);
+                    groceryItemList.Add(groceryItem);
+                }
+                response.GroceryItems = groceryItemList;
                 response.Message = "Data returned for the requested sub cateroy";
                 return response;
             }
